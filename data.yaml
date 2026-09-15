@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['smoke']
+
+roboflow:
+  workspace: rakeshs-workspace-uovgu
+  project: spontaneous-combustion-of-coal
+  version: 3
+  license: Private
+  url: https://app.roboflow.com/rakeshs-workspace-uovgu/spontaneous-combustion-of-coal/3
