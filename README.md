@@ -1,119 +1,131 @@
-# YOLOv8 Smoke Detector for Coal Combustion
+# Smoke Detection in Coal Combustion
 
-## Project Overview
-This project aims to develop a computer vision model using YOLOv8 to detect smoke in images related to coal combustion. The primary goal is to identify and localize smoke, which can be critical for monitoring and safety in industrial settings.
+YOLOv8 object detection for identifying and localizing smoke produced by spontaneous coal combustion. The model detects one class, `smoke`, and draws a bounding box around the detected region.
 
-## Execution Details
+## Repository Contents
 
-### 1. Environment Setup
+- `Model.ipynb`: local inference notebook for validation or custom images.
+- `Smoke_Detection_in_Coal_Combustion.ipynb`: training, validation, and export notebook.
+- `model/best.pt`: trained PyTorch YOLO model.
+- `model/best.onnx`: exported ONNX model.
+- `dataset/`: training, validation, and test images with YOLOv8 labels.
+- `data.yaml`: YOLO dataset configuration.
+- `presentation_images/`: example inputs and corresponding model outputs.
+- `requirements.txt`: Python dependencies.
 
-First, the Google Drive was mounted to access the dataset, and the `ultralytics` library, which provides the YOLOv8 framework, was installed.
+## Results
 
-```python
-from google.colab import drive
-drive.mount('/content/drive')
-!pip install ultralytics
+Recorded validation results from the training run:
+
+| Metric | Score |
+| --- | ---: |
+| Precision | 0.8071 |
+| Recall | 0.5116 |
+| mAP50 | 0.6882 |
+| mAP50-95 | 0.3856 |
+| F1 score | 0.6263 |
+
+These scores are reference results and may vary with a different environment, split, or training configuration.
+
+## Installation
+
+Use Python 3.9 or newer and install the dependencies from the repository root:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate       # macOS/Linux
+# .venv\Scripts\activate       # Windows
+python -m pip install -r requirements.txt
 ```
 
-### 2. Dataset Preparation
+## Running Inference
 
-The dataset for training and validation is stored in Google Drive at `/content/drive/MyDrive/coal_combustion_image_dataset`. A `data.yaml` configuration file was created to inform YOLOv8 about the dataset's structure, including paths to training and validation images, and the single class 'smoke'.
+The local inference notebook loads `model/best.pt`, selects an image from `dataset/valid/images`, runs prediction, and displays the annotated result.
 
 ```python
-dataset_path = '/content/drive/MyDrive/coal_combustion_image_dataset'
-data_yaml_content = f"""
-path: {dataset_path}
-train: train/images
-val: valid/images
-test: test/images
+from IPython.display import display
+from PIL import Image
+from ultralytics import YOLO
+
+model = YOLO("model/best.pt")
+results = model.predict(source="dataset/valid/images/example.jpg", conf=0.25)
+
+for result in results:
+    annotated = result.plot()  # Ultralytics returns a BGR NumPy array.
+    display(Image.fromarray(annotated[..., ::-1]))  # Convert BGR to RGB.
+```
+
+Replace `example.jpg` with an available image. Adjust the `conf` argument to change the confidence threshold.
+
+## Input and Output Examples
+
+The `presentation_images` directory shows how the model processes images:
+
+| Input | Model output |
+| --- | --- |
+| ![Input 1](presentation_images/input1.png) | ![Output 1](presentation_images/output1.png) |
+| ![Input 2](presentation_images/input2.png) | ![Output 2](presentation_images/output2.png) |
+| ![Input 3](presentation_images/input3.png) | ![Output 3](presentation_images/output3.png) |
+
+The input images show coal piles and visible smoke. The output images are the same scenes after inference, with blue boxes and confidence scores indicating regions classified as `smoke`. These examples make the model's behavior and output format easy to inspect.
+
+## Dataset Collection and Preparation
+
+The dataset was exported from Roboflow on August 6, 2026. It contains 254 images of spontaneous coal combustion, annotated in YOLOv8 format. The dataset is divided into `train`, `valid`, and `test` splits, with one class:
+
+```yaml
 nc: 1
 names: ['smoke']
-"""
-with open('data.yaml', 'w') as f:
-    f.write(data_yaml_content)
 ```
 
-### 3. Model Training
+Roboflow applied the following preprocessing:
 
-A YOLOv8n (nano version) model, pre-trained on the COCO dataset, was loaded and fine-tuned on our custom smoke detection dataset for 25 epochs. The training process leveraged image augmentation and optimization techniques inherent to the YOLOv8 framework.
+- Automatic image orientation with EXIF metadata removed.
+- Stretch resize to `432x432` pixels.
+- No image augmentation during dataset export.
+
+The dataset configuration is recorded in [`data.yaml`](data.yaml), and the original export information is preserved in [`README.roboflow.txt`](README.roboflow.txt). The Roboflow project is private, so access to the source project may require permission from the dataset owner.
+
+## Training and Validation
+
+The training notebook fine-tunes YOLOv8 nano for 25 epochs and validates it against the dataset configuration:
 
 ```python
 from ultralytics import YOLO
-model = YOLO('yolov8n.pt')
-results = model.train(data='data.yaml', epochs=25, imgsz=640)
+
+model = YOLO("yolov8n.pt")
+model.train(data="data.yaml", epochs=25, imgsz=640)
+metrics = model.val(data="data.yaml")
 ```
 
-### 4. Model Validation
+The notebook also exports the trained model to ONNX and saves a PyTorch state dictionary. For local inference, use the files in `model/` and `Model.ipynb`.
 
-After training, the model's performance was evaluated on the validation set. Key metrics were collected to assess its accuracy and robustness in detecting smoke.
+## Contributing
 
-**Validation Metrics:**
-*   **Precision (P):** 0.8071
-*   **Recall (R):** 0.5116
-*   **mAP50:** 0.6882
-*   **mAP50-95:** 0.3856
-*   **F1 Score:** 0.6263
+Contributions are welcome, including improvements to the notebooks, documentation, dataset tooling, evaluation, and deployment.
 
-```python
-metrics = model.val(data='data.yaml')
-# Print metrics...
-```
+1. Fork this repository on GitHub.
+2. Clone your fork and create a focused branch:
 
-### 5. Model Export
+   ```bash
+   git clone https://github.com/<your-user>/Smoke-Detection-in-Coal-Combustion.git
+   cd Smoke-Detection-in-Coal-Combustion
+   git checkout -b improve-documentation
+   ```
 
-The trained model was exported to ONNX format for potential deployment in various environments. The PyTorch state dictionary was also saved for further use within Python or for loading back into the `ultralytics` framework.
+3. Make and test your changes. For model changes, include the dataset/configuration used and relevant validation metrics.
+4. Commit and push the branch to your fork:
 
-*   **ONNX Model Path:** `/content/runs/detect/train-2/weights/best.onnx`
-*   **PyTorch State Dict Path:** `/content/yolov8n_smoke_detector.pt`
+   ```bash
+   git add .
+   git commit -m "Describe the change"
+   git push origin improve-documentation
+   ```
 
-```python
-export_path = model.export(format='onnx')
-import torch
-torch.save(model.state_dict(), 'yolov8n_smoke_detector.pt')
-```
+5. Open a pull request from your branch to this repository. Explain what changed, why it changed, how it was tested, and include screenshots or sample outputs when the change affects model behavior or documentation.
 
-### 6. Model Testing (Inference)
+Please avoid committing private data, credentials, generated caches, or unnecessary model artifacts.
 
-To test the trained model, an image from the dataset's validation set was used. The model performs prediction on this image, and the results, including bounding boxes around detected smoke, are displayed.
+## License
 
-```python
-from ultralytics import YOLO
-import os
-from PIL import Image # Needed for displaying results
-
-model_path = '/content/runs/detect/train-2/weights/best.pt'
-model = YOLO(model_path)
-
-dataset_path = '/content/drive/MyDrive/coal_combustion_image_dataset' # Ensure this is defined
-validation_images_dir = os.path.join(dataset_path, 'valid', 'images')
-
-if os.path.exists(validation_images_dir):
-    all_images = [f for f in os.listdir(validation_images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    if all_images:
-        test_image_name = all_images[0] # Using the first image for demonstration
-        test_image_path = os.path.join(validation_images_dir, test_image_name)
-        print(f"Using sample test image from validation set: {test_image_path}")
-    else:
-        test_image_path = "/path/to/your/test_image.jpg"
-        print("No images found in validation set.")
-else:
-    test_image_path = "/path/to/your/test_image.jpg"
-    print("Validation image directory not found.")
-
-results = model.predict(source=test_image_path, conf=0.25) # conf sets confidence threshold
-
-for r in results:
-    im_array = r.plot()  # plot a BGR numpy array of predictions
-    display(Image.fromarray(im_array[..., ::-1])) # RGB conversion and display
-```
-
-## How to Run the Model and Get Outputs
-
-To replicate the model's performance or use it for new predictions:
-
-1.  **Mount Google Drive:** Ensure your Google Drive is mounted and the `coal_combustion_image_dataset` is accessible at the specified path.
-2.  **Install Dependencies:** Run `!pip install ultralytics`.
-3.  **Prepare `data.yaml`:** Create the `data.yaml` file as shown in section 2.
-4.  **Load Trained Model:** Load the `best.pt` weights from the training output directory (e.g., `/content/runs/detect/train-2/weights/best.pt`). If you rerun training, this path might change.
-5.  **Perform Inference:** Use `model.predict()` with your desired image path. Adjust the `conf` (confidence threshold) parameter as needed.
-6.  **Visualize Results:** The `results` object from `model.predict()` can be used to plot bounding boxes directly onto the images. The `r.plot()` method returns a NumPy array suitable for display.
+This project is released under the [MIT License](LICENSE). The license permits use, copying, modification, distribution, sublicensing, and sale, provided that the copyright and permission notice are included. The software is provided without warranty.
