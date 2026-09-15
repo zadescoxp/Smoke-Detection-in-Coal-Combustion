@@ -1,4 +1,3 @@
-readme_content = """
 # YOLOv8 Smoke Detector for Coal Combustion
 
 ## Project Overview
@@ -118,16 +117,3 @@ To replicate the model's performance or use it for new predictions:
 4.  **Load Trained Model:** Load the `best.pt` weights from the training output directory (e.g., `/content/runs/detect/train-2/weights/best.pt`). If you rerun training, this path might change.
 5.  **Perform Inference:** Use `model.predict()` with your desired image path. Adjust the `conf` (confidence threshold) parameter as needed.
 6.  **Visualize Results:** The `results` object from `model.predict()` can be used to plot bounding boxes directly onto the images. The `r.plot()` method returns a NumPy array suitable for display.
-
-## Further Steps
-
-*   **More Data:** Expand the dataset for more robust training.
-*   **Hyperparameter Tuning:** Optimize training parameters (e.g., learning rate, batch size, augmentations) for better performance.
-*   **Different YOLOv8 Models:** Experiment with other YOLOv8 variants (e.g., `yolov8m`, `yolov8l`) for different trade-offs between speed and accuracy.
-*   **Deployment:** Integrate the exported ONNX model into a real-time application or edge device.
-"""
-
-with open('README.md', 'w') as f:
-    f.write(readme_content)
-
-print("README.md created successfully in the /content directory.")
